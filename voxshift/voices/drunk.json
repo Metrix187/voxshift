@@ -1,0 +1,30 @@
+{
+  "name": "Drunk",
+  "category": "fun",
+  "description": "Pitch that wanders randomly.",
+  "chain": [
+    {
+      "type": "PitchShift",
+      "params": {
+        "semitones": {
+          "random": {
+            "min": -3,
+            "max": 2,
+            "interval_s": 0.6,
+            "smooth": 0.9
+          }
+        }
+      }
+    },
+    {
+      "type": "ModDelay",
+      "params": {
+        "base_ms": 8,
+        "depth_ms": 6,
+        "rate_hz": 0.4,
+        "voices": 1,
+        "mix": 0.3
+      }
+    }
+  ]
+}

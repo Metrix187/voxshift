@@ -1,0 +1,23 @@
+{
+  "name": "Female to Male",
+  "category": "gender",
+  "description": "-4 st pitch, -2.5 st formants.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": -4,
+        "formant_semitones": -2.5
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "lowshelf",
+        "freq": 180,
+        "q": 0.7,
+        "gain_db": 2
+      }
+    }
+  ]
+}

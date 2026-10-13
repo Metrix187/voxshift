@@ -1,0 +1,20 @@
+{
+  "category": "ai",
+  "engine": "seedvc",
+  "reference": "",
+  "inference_cfg_rate": 0.7,
+  "crossfade_time": 0.04,
+  "extra_time_ce": 2.5,
+  "extra_time": 0.5,
+  "extra_time_right": 0.02,
+  "max_prompt_length": 3.0,
+  "silence_threshold_db": -55,
+  "name": "AI voice (template)",
+  "description": "Template for your own AI voices: Whisper-small encoder -> DiT flow matching -> BigVGAN, run by ONNX Runtime (DirectML > CUDA > CPU).",
+  "model": "whisper-small-bigvgan",
+  "diffusion_steps": 6,
+  "block_time": 0.5,
+  "backend": "onnx",
+  "onnx_dir": "models/onnx/whisper-small-bigvgan",
+  "template": true
+}

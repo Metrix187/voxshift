@@ -1,0 +1,34 @@
+{
+  "name": "Ghost",
+  "category": "monster",
+  "description": "Whispered, pitched-up and drowned in reverb.",
+  "chain": [
+    {
+      "type": "Whisperize"
+    },
+    {
+      "type": "PitchShift",
+      "params": {
+        "semitones": 4
+      }
+    },
+    {
+      "type": "ModDelay",
+      "params": {
+        "base_ms": 20,
+        "depth_ms": 8,
+        "rate_hz": 0.25,
+        "voices": 2,
+        "mix": 0.5
+      }
+    },
+    {
+      "type": "ConvolutionReverb",
+      "params": {
+        "decay_s": 4.0,
+        "mix": 0.55,
+        "damping": 0.3
+      }
+    }
+  ]
+}

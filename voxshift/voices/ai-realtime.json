@@ -1,0 +1,17 @@
+{
+  "category": "ai",
+  "engine": "seedvc",
+  "reference": "",
+  "inference_cfg_rate": 0.7,
+  "crossfade_time": 0.04,
+  "extra_time_ce": 2.5,
+  "extra_time": 0.5,
+  "extra_time_right": 0.02,
+  "max_prompt_length": 3.0,
+  "silence_threshold_db": -55,
+  "name": "AI Voice (XLSR-tiny + HiFT, fastest)",
+  "description": "Lower-latency Seed-VC real-time model (wav2vec2-XLSR content features, HiFT vocoder).",
+  "model": "xlsr-tiny-hifigan",
+  "diffusion_steps": 6,
+  "block_time": 0.2
+}

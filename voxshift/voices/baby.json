@@ -1,0 +1,14 @@
+{
+  "name": "Baby",
+  "category": "pitch",
+  "description": "Very high pitch with small vocal tract.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": 9,
+        "formant_semitones": 4
+      }
+    }
+  ]
+}

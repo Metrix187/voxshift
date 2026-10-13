@@ -1,0 +1,20 @@
+# PyTorch with CUDA is installed separately (see README):
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+numpy>=1.26
+scipy>=1.13
+sounddevice>=0.5
+soundfile>=0.12
+# AI voices (Seed-VC runtime)
+librosa>=0.10
+transformers==4.46.3
+huggingface_hub>=0.28,<1.0
+munch>=4.0
+einops>=0.8
+pyyaml>=6.0
+matplotlib>=3.8
+# ONNX export / runner (optional). DirectML runs on any DirectX 12 GPU on Windows;
+# on Linux use `onnxruntime-gpu` instead (same Python module).
+onnx>=1.17
+onnxruntime-directml>=1.20 ; platform_system == "Windows"
+# tests
+pytest>=8

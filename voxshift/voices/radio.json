@@ -1,0 +1,38 @@
+{
+  "name": "Radio",
+  "category": "device",
+  "description": "AM radio: narrow band, light crunch, static.",
+  "chain": [
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "highpass",
+        "freq": 450,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "lowpass",
+        "freq": 3200,
+        "q": 0.9
+      }
+    },
+    {
+      "type": "Distortion",
+      "params": {
+        "drive_db": 9,
+        "shape": "tanh",
+        "output_db": -2
+      }
+    },
+    {
+      "type": "Oscillator",
+      "params": {
+        "waveform": "noise",
+        "level_db": -42
+      }
+    }
+  ]
+}

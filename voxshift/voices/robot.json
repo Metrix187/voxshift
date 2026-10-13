@@ -1,0 +1,33 @@
+{
+  "name": "Robot",
+  "category": "robot",
+  "description": "Channel vocoder on a saw carrier plus metallic flange.",
+  "chain": [
+    {
+      "type": "Vocoder",
+      "params": {
+        "carrier_hz": 110,
+        "waveform": "saw",
+        "bands": 32
+      }
+    },
+    {
+      "type": "ModDelay",
+      "params": {
+        "base_ms": 3,
+        "depth_ms": 1.5,
+        "rate_hz": 0.3,
+        "voices": 1,
+        "mix": 0.5
+      }
+    },
+    {
+      "type": "Compressor",
+      "params": {
+        "threshold_db": -24,
+        "ratio": 4,
+        "makeup_db": 6
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "name": "Demon",
+  "category": "monster",
+  "description": "Octave-down layered with a fifth-down, distorted, in a hall.",
+  "chain": [
+    {
+      "type": "Parallel",
+      "gains_db": [
+        0,
+        -4
+      ],
+      "branches": [
+        [
+          {
+            "type": "FormantPitchShifter",
+            "params": {
+              "semitones": -12,
+              "formant_semitones": -5
+            }
+          }
+        ],
+        [
+          {
+            "type": "FormantPitchShifter",
+            "params": {
+              "semitones": -7,
+              "formant_semitones": -3
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "type": "Distortion",
+      "params": {
+        "drive_db": 8,
+        "shape": "tanh",
+        "mix": 0.6,
+        "output_db": -3
+      }
+    },
+    {
+      "type": "ConvolutionReverb",
+      "params": {
+        "decay_s": 2.5,
+        "mix": 0.3,
+        "damping": 0.7
+      }
+    }
+  ]
+}

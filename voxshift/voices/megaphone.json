@@ -1,0 +1,40 @@
+{
+  "name": "Megaphone",
+  "category": "device",
+  "description": "Horn resonance and fuzz.",
+  "chain": [
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "highpass",
+        "freq": 600,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "peaking",
+        "freq": 1800,
+        "q": 1.2,
+        "gain_db": 9
+      }
+    },
+    {
+      "type": "Distortion",
+      "params": {
+        "drive_db": 14,
+        "shape": "fuzz",
+        "output_db": -6
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "lowpass",
+        "freq": 4500,
+        "q": 0.7
+      }
+    }
+  ]
+}

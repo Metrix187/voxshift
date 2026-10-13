@@ -1,0 +1,38 @@
+{
+  "name": "Stadium Announcer",
+  "category": "space",
+  "description": "PA-system tone with long slap echoes.",
+  "chain": [
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "highpass",
+        "freq": 250,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Compressor",
+      "params": {
+        "threshold_db": -28,
+        "ratio": 5,
+        "makeup_db": 9
+      }
+    },
+    {
+      "type": "Delay",
+      "params": {
+        "time_ms": 180,
+        "feedback": 0.45,
+        "mix": 0.4
+      }
+    },
+    {
+      "type": "ConvolutionReverb",
+      "params": {
+        "decay_s": 2.8,
+        "mix": 0.35
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "Whisper",
+  "category": "fx",
+  "description": "Unvoiced breathy whisper.",
+  "chain": [
+    {
+      "type": "Whisperize"
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "highpass",
+        "freq": 250,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Gain",
+      "params": {
+        "gain_db": 4
+      }
+    }
+  ]
+}

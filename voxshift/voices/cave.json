@@ -1,0 +1,24 @@
+{
+  "name": "Cave",
+  "category": "space",
+  "description": "Long dark reverb with slapback echoes.",
+  "chain": [
+    {
+      "type": "Delay",
+      "params": {
+        "time_ms": 320,
+        "feedback": 0.3,
+        "mix": 0.35
+      }
+    },
+    {
+      "type": "ConvolutionReverb",
+      "params": {
+        "decay_s": 3.2,
+        "predelay_ms": 40,
+        "damping": 0.75,
+        "mix": 0.45
+      }
+    }
+  ]
+}

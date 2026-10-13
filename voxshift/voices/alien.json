@@ -1,0 +1,37 @@
+{
+  "name": "Alien",
+  "category": "monster",
+  "description": "Wobbling pitch, ring-mod shimmer and chorus.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": {
+          "lfo": {
+            "rate": 3.0,
+            "min": 2.0,
+            "max": 5.0
+          }
+        },
+        "formant_semitones": 3
+      }
+    },
+    {
+      "type": "RingModulation",
+      "params": {
+        "freq": 320,
+        "mix": 0.3
+      }
+    },
+    {
+      "type": "ModDelay",
+      "params": {
+        "base_ms": 12,
+        "depth_ms": 5,
+        "rate_hz": 1.2,
+        "voices": 3,
+        "mix": 0.5
+      }
+    }
+  ]
+}

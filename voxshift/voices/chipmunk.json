@@ -1,0 +1,14 @@
+{
+  "name": "Chipmunk",
+  "category": "pitch",
+  "description": "High pitch, formants shifted with it.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": 8,
+        "preserve_formants": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "Telephone",
+  "category": "device",
+  "description": "Narrow-band phone line with sample-rate crush.",
+  "chain": [
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "highpass",
+        "freq": 300,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "lowpass",
+        "freq": 3400,
+        "q": 0.7
+      }
+    },
+    {
+      "type": "Bitcrusher",
+      "params": {
+        "bits": 10,
+        "downsample": 6
+      }
+    },
+    {
+      "type": "Compressor",
+      "params": {
+        "threshold_db": -26,
+        "ratio": 6,
+        "makeup_db": 8
+      }
+    }
+  ]
+}

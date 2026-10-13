@@ -1,0 +1,15 @@
+{
+  "name": "Auto-Tune",
+  "category": "music",
+  "description": "Hard pitch correction to the chromatic scale.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "autotune": 1.0,
+        "autotune_speed": 1.0,
+        "scale": "chromatic"
+      }
+    }
+  ]
+}

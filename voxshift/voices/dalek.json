@@ -1,0 +1,36 @@
+{
+  "name": "Dalek",
+  "category": "robot",
+  "description": "30 Hz ring modulator, crunchy and band-limited.",
+  "chain": [
+    {
+      "type": "RingModulation",
+      "params": {
+        "freq": 30,
+        "mix": 1.0
+      }
+    },
+    {
+      "type": "Distortion",
+      "params": {
+        "drive_db": 10,
+        "shape": "tanh",
+        "output_db": -4
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "bandpass",
+        "freq": 1200,
+        "q": 0.6
+      }
+    },
+    {
+      "type": "Gain",
+      "params": {
+        "gain_db": 6
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Giant",
+  "category": "pitch",
+  "description": "Huge vocal tract, low pitch, room.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": -9,
+        "formant_semitones": -5
+      }
+    },
+    {
+      "type": "ConvolutionReverb",
+      "params": {
+        "decay_s": 1.8,
+        "mix": 0.2
+      }
+    }
+  ]
+}

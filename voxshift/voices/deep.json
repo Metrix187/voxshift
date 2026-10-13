@@ -1,0 +1,23 @@
+{
+  "name": "Deep",
+  "category": "pitch",
+  "description": "Lower pitch with natural formants.",
+  "chain": [
+    {
+      "type": "FormantPitchShifter",
+      "params": {
+        "semitones": -5,
+        "formant_semitones": -1.5
+      }
+    },
+    {
+      "type": "Biquad",
+      "params": {
+        "kind": "lowshelf",
+        "freq": 200,
+        "q": 0.7,
+        "gain_db": 3
+      }
+    }
+  ]
+}
