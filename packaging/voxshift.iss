@@ -1,5 +1,6 @@
 ; VoxShift installer (Inno Setup 6).
-; Built by packaging/build.py, which passes AppVersion / DistDir / OutDir.
+; Built by packaging/build.py, which passes AppVersion / DistDir / OutDir and, for the web installer,
+; ModelInclude (generated Pascal that lists the AI voice pack chunks with their SHA-256).
 ; Per-user install (%LOCALAPPDATA%\Programs), so the app itself needs no admin rights;
 ; only the optional virtual-microphone driver asks for elevation.
 
@@ -19,6 +20,7 @@ AppName=VoxShift
 AppVersion={#AppVersion}
 AppVerName=VoxShift {#AppVersion}
 AppPublisher=VoxShift
+AppPublisherURL=https://github.com/Metrix187/voxshift
 DefaultDirName={localappdata}\Programs\VoxShift
 DefaultGroupName=VoxShift
 DisableProgramGroupPage=yes
@@ -31,13 +33,15 @@ SetupIconFile=..\voxshift\assets\voxshift.ico
 UninstallDisplayIcon={app}\VoxShift.exe
 UninstallDisplayName=VoxShift
 WizardStyle=modern
-; model weights are already dense; fast LZMA keeps build time sane for ~1 GB
-Compression=lzma2/fast
-SolidCompression=no
+Compression=lzma2/ultra64
+SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no
 
 [Tasks]
+#ifdef ModelInclude
+Name: "aivoices"; Description: "Download AI voices now (about 820 MB; you can also do this later in the app)"; Check: not ModelInstalled
+#endif
 Name: "vbcable"; Description: "Install the virtual microphone (free VB-CABLE driver from vb-audio.com; Windows will ask for permission)"; Check: not CableInstalled
 Name: "desktopicon"; Description: "Create a desktop shortcut"
 Name: "autostart"; Description: "Start VoxShift with Windows (in the tray)"; Flags: unchecked
@@ -53,6 +57,10 @@ Name: "{autodesktop}\VoxShift"; Filename: "{app}\VoxShift.exe"; Tasks: desktopic
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "VoxShift"; ValueData: """{app}\VoxShift.exe"" --minimized"; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
+#ifdef ModelInclude
+; the chunks were downloaded and hash-checked on the "Preparing" page; rebuild + verify the model files
+Filename: "{app}\voxshift-cli.exe"; Parameters: "models assemble --chunks ""{tmp}"""; StatusMsg: "Installing AI voices..."; Flags: runhidden waituntilterminated; Tasks: aivoices
+#endif
 ; 1) download the official VB-CABLE pack and refuse it unless its Authenticode signature is VB-Audio's;
 ; 2) Setup itself runs the verified driver setup elevated (-i -h = install, hidden UI). Requesting elevation
 ;    from this visible wizard keeps the UAC prompt in front; Windows also asks for driver consent once.
@@ -63,6 +71,8 @@ Filename: "{app}\VoxShift.exe"; Description: "Launch VoxShift"; Flags: nowait po
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\_internal"
 Type: filesandordirs; Name: "{app}\vbcable"
+; downloaded AI voice pack (settings and your own voices in %APPDATA%\VoxShift are kept)
+Type: filesandordirs; Name: "{localappdata}\VoxShift\models"
 
 [Code]
 function VBCableDownloaded: Boolean;
@@ -75,3 +85,66 @@ begin
   { The driver runs from the DriverStore, so look for its service, not a file in System32\drivers. }
   Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\VBAudioVACMME');
 end;
+
+function ModelInstalled: Boolean;
+begin
+  Result := FileExists(ExpandConstant('{localappdata}\VoxShift\models\onnx\whisper-small-bigvgan\config.json'));
+end;
+
+#ifdef ModelInclude
+var
+  DownloadPage: TDownloadWizardPage;
+
+{ Queue a file unless an earlier attempt already left a verified copy in Setup's temp folder,
+  so pressing Install again after a network error only fetches what is still missing. }
+procedure AddChunk(const Url, Name, Sha: String);
+var
+  Path: String;
+begin
+  Path := ExpandConstant('{tmp}\' + Name);
+  if FileExists(Path) and (GetSHA256OfFile(Path) = Sha) then
+    Log('already have ' + Name)
+  else
+    DownloadPage.Add(Url, Name, Sha);
+end;
+
+#include ModelInclude
+
+function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  Result := True;
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage('Downloading AI voices',
+    'VoxShift is downloading its AI voice pack (about 820 MB). Every piece is checked before use.',
+    @OnDownloadProgress);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if (CurPageID = wpReady) and WizardIsTaskSelected('aivoices') then begin
+    DownloadPage.Clear;
+    AddModelDownloads;
+    DownloadPage.Show;
+    try
+      try
+        DownloadPage.Download;
+      except
+        if DownloadPage.AbortedByUser then
+          Log('AI voice download aborted by user.')
+        else
+          { (no line may start with '#': the preprocessor would read it as a directive) }
+          SuppressibleMsgBox('The AI voice download was interrupted: ' + GetExceptionMessage + #13#10#13#10 +
+            'Click Install to resume, or untick "Download AI voices" to skip it ' +
+            '(VoxShift can download them later).', mbError, MB_OK, IDOK);
+        Result := False;
+      end;
+    finally
+      DownloadPage.Hide;
+    end;
+  end;
+end;
+#endif

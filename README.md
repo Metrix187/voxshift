@@ -16,10 +16,11 @@ telemetry.
 
 ## Download
 
-Get **`VoxShift-Setup-<version>.exe`** from
-[Releases](../../releases/latest) and run it.
+Get **`VoxShift-Setup-<version>.exe`** (about 60 MB) from
+[Releases](../../releases/latest) and run it. It's a web installer:
 
 * **Per-user install.** It goes into `%LOCALAPPDATA%\Programs\VoxShift`, with shortcuts and an uninstaller. The app itself needs no admin rights.
+* **AI voices.** Leave **"Download AI voices now"** checked to fetch the 820 MB AI voice pack during setup. It comes in 25 MB pieces, and each one is SHA-256 checked. If you skip it, the app offers the download the first time you use an AI voice, and it resumes if interrupted.
 * **Virtual microphone.** Leave **"Install the virtual microphone"** checked. Setup downloads the free [VB-CABLE](https://vb-audio.com/Cable/) driver from vb-audio.com and only runs it if VB-Audio's code signature checks out. Approve the two Windows prompts (admin + driver), once.
 * In Discord, OBS or your game, choose **CABLE Output (VB-Audio Virtual Cable)** as the microphone.
 
@@ -121,9 +122,14 @@ python -m venv .venv
 .venv\Scripts\python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 .venv\Scripts\python -m pip install -r requirements.txt pyinstaller pystray pillow sv-ttk
 .venv\Scripts\python -m voxshift export-onnx      # downloads the open weights, writes models/onnx (~1.2 GB)
-.venv\Scripts\python packaging/build.py           # build/dist/VoxShift + installer (needs Inno Setup 6)
-.venv\Scripts\python -m pytest                     # 43 tests
+.venv\Scripts\python packaging/build.py           # app + web installer + AI voice pack chunks (needs Inno Setup 6)
+.venv\Scripts\python -m pytest                     # 46 tests
 ```
+
+`build.py --bundle-models` makes an offline installer (about 880 MB)
+instead. `packaging/publish.py --models` and `--app` upload the voice pack
+and installer to GitHub releases. They go one file at a time with retries,
+and files already uploaded are skipped.
 
 The developer install can also run the AI voices in PyTorch with a CUDA-graph
 solver (`ai-whisper-small`, `ai-realtime`). These have lower latency on

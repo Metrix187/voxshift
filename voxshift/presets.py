@@ -8,10 +8,11 @@ import shutil
 from pathlib import Path
 
 from .dsp.graph import Voice
-from .paths import models_dir, references_dir, user_voices_dir
+from .paths import references_dir, user_voices_dir
 
 BUILTIN_DIR = Path(__file__).resolve().parent / "voices"
 ONNX_MODEL = "whisper-small-bigvgan"
+NEEDS_DOWNLOAD = "AI voices need a one-time download (about 820 MB)"
 
 
 def preset_dirs() -> list[Path]:
@@ -27,8 +28,8 @@ def unavailable_reason(spec: dict) -> str | None:
     if not is_ai(spec):
         return None
     if spec.get("backend") == "onnx":
-        d = models_dir() / "onnx" / spec.get("model", ONNX_MODEL)
-        return None if (d / "config.json").is_file() else "AI model files are not installed"
+        from .ai.model_pack import find_model
+        return None if find_model(spec.get("model", ONNX_MODEL)) else NEEDS_DOWNLOAD
     if importlib.util.find_spec("torch") is None:
         return "needs the PyTorch developer setup"
     return None
@@ -46,7 +47,7 @@ def list_presets(include_unavailable: bool = False) -> dict[str, dict]:
                 continue
             spec["_path"] = str(p)
             spec["_user"] = d != BUILTIN_DIR
-            if include_unavailable or unavailable_reason(spec) is None:
+            if include_unavailable or unavailable_reason(spec) in (None, NEEDS_DOWNLOAD):
                 found[p.stem] = spec
     return found
 

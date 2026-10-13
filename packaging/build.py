@@ -2,6 +2,7 @@
 
     python packaging/build.py            # -> build/dist/VoxShift/  (+ build/VoxShift-Setup-<ver>.exe)
     python packaging/build.py --no-installer
+    python packaging/build.py --bundle-models   # offline installer (~880 MB) instead of the web installer
 
 Requires the dev environment once, to export the AI model to ONNX
 (`python -m voxshift export-onnx`); the resulting app needs no Python,
@@ -34,6 +35,7 @@ def version() -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-installer", action="store_true")
+    ap.add_argument("--bundle-models", action="store_true", help="offline installer with the AI model inside")
     args = ap.parse_args()
 
     missing = [f for f in MODEL_FILES if not (MODEL / f).is_file()]
@@ -46,15 +48,21 @@ def main():
     subprocess.run([sys.executable, "-m", "PyInstaller", str(ROOT / "packaging" / "voxshift.spec"), "--noconfirm",
                     "--distpath", str(BUILD / "dist"), "--workpath", str(BUILD / "work")], check=True)
 
-    print("== AI model")
-    dest = DIST / "models" / "onnx" / MODEL.name
-    dest.mkdir(parents=True, exist_ok=True)
-    for f in MODEL_FILES:
-        shutil.copy2(MODEL / f, dest / f)
+    shutil.rmtree(DIST / "models", ignore_errors=True)
+    iscc_defines = []
+    if args.bundle_models:
+        print("== AI model (bundled: offline installer)")
+        dest = DIST / "models" / "onnx" / MODEL.name
+        dest.mkdir(parents=True, exist_ok=True)
+        for f in MODEL_FILES:
+            shutil.copy2(MODEL / f, dest / f)
+    else:
+        print("== AI voice pack (web installer: downloaded during setup or from the app)")
+        iscc_defines.append(f"/DModelInclude={write_model_pack()}")
     for doc in ("LICENSE", "THIRD_PARTY_NOTICES.md"):  # licence texts travel with the binaries
         shutil.copy2(ROOT / doc, DIST / doc)
     size = sum(p.stat().st_size for p in DIST.rglob("*") if p.is_file())
-    print(f"app folder: {DIST} ({size / 2**30:.2f} GB)")
+    print(f"app folder: {DIST} ({size / 2**20:.0f} MB)")
 
     if args.no_installer:
         return
@@ -64,7 +72,28 @@ def main():
         return
     print("== Inno Setup")
     subprocess.run([str(iscc), f"/DAppVersion={version()}", f"/DDistDir={DIST}", f"/DOutDir={BUILD}",
-                    str(ROOT / "packaging" / "voxshift.iss")], check=True)
+                    *iscc_defines, str(ROOT / "packaging" / "voxshift.iss")], check=True)
+
+
+def write_model_pack() -> Path:
+    """Chunk the model into build/model-pack (what gets published as the models release) and
+    emit the Pascal include that makes the installer download exactly those chunks."""
+    sys.path.insert(0, str(ROOT))
+    from voxshift.ai import model_pack
+
+    pack_dir = BUILD / "model-pack"
+    shutil.rmtree(pack_dir, ignore_errors=True)
+    manifest = model_pack.pack(MODEL, pack_dir)
+    lines = ["procedure AddModelDownloads;", "begin",
+             f"  AddChunk('{model_pack.BASE_URL}manifest.json', 'manifest.json', "
+             f"'{model_pack._sha256(pack_dir / 'manifest.json')}');"]
+    lines += [f"  AddChunk('{c['url']}', '{c['name']}', '{c['sha256']}');" for c in manifest["chunks"]]
+    lines += ["end;", ""]
+    inc = BUILD / "model_downloads.iss"
+    inc.write_text("\n".join(lines), encoding="utf-8")
+    print(f"{len(manifest['chunks'])} chunks ({manifest['total_size'] / 2**20:.0f} MB) in {pack_dir}; "
+          f"publish them as release '{model_pack.PACK_TAG}' (python packaging/publish.py --models)")
+    return inc
 
 
 if __name__ == "__main__":

@@ -91,6 +91,33 @@ def cmd_cable(a):
             print(f"    note: {c.caveat}")
 
 
+def cmd_models(a):
+    import json
+    from pathlib import Path
+
+    from .ai import model_pack as mp
+    if a.action == "status":
+        d = mp.find_model()
+        print(f"AI voice pack: {'installed at ' + str(d) if d else 'not installed'}")
+    elif a.action == "download":
+        last = [0.0]
+
+        def progress(done, total):
+            import time
+            if time.monotonic() - last[0] > 0.5 or done == total:
+                last[0] = time.monotonic()
+                print(f"\r  {done / 2**20:7.1f} / {total / 2**20:.1f} MB ({100 * done / total:5.1f} %)",
+                      end="", flush=True)
+        print(f"downloading the AI voice pack from {mp.BASE_URL}")
+        print(f"\ninstalled: {mp.download(progress)}")
+    elif a.action == "pack":
+        m = mp.pack(Path(a.model or mp.find_model()), Path(a.out))
+        print(f"{len(m['chunks'])} chunks, {m['total_size'] / 2**20:.1f} MB -> {a.out}")
+    elif a.action == "assemble":
+        manifest = json.loads((Path(a.chunks) / "manifest.json").read_text())
+        print(f"installed: {mp.assemble(manifest, Path(a.chunks))}")
+
+
 def cmd_live(a):
     import sounddevice as sd
 
@@ -186,6 +213,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-test", action="store_true", help="skip the loopback tone test")
     s.add_argument("--hostapi")
     s.set_defaults(fn=cmd_cable)
+
+    s = sub.add_parser("models", help="AI voice pack: status / download / pack / assemble")
+    s.add_argument("action", choices=["status", "download", "pack", "assemble"])
+    s.add_argument("--model", help="pack: model folder (default: the installed one)")
+    s.add_argument("--out", default="build/model-pack", help="pack: output folder")
+    s.add_argument("--chunks", help="assemble: folder with manifest.json + downloaded chunks")
+    s.set_defaults(fn=cmd_models)
 
     s = sub.add_parser("gui", help="open the desktop app")
     s.add_argument("--minimized", action="store_true", help="start in the system tray")

@@ -31,6 +31,14 @@ def data_dir() -> Path:
     return d
 
 
+def user_models_dir() -> Path:
+    """Downloaded AI voice packs (%LOCALAPPDATA%/VoxShift/models); survives app updates."""
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".cache")
+    d = Path(base) / APP_NAME / "models"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def user_voices_dir() -> Path:
     d = data_dir() / "voices"
     d.mkdir(parents=True, exist_ok=True)

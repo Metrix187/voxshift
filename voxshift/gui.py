@@ -20,7 +20,8 @@ from . import __version__, winsys
 from .audio.cable import find_cables, install_vbcable
 from .audio.engine import AudioEngine, NoVirtualCable, default_hostapi, list_devices
 from .paths import FROZEN, log_dir
-from .presets import build_processor, create_ai_voice, delete_user_voice, is_ai, list_presets
+from .presets import (NEEDS_DOWNLOAD, build_processor, create_ai_voice, delete_user_voice, is_ai, list_presets,
+                      unavailable_reason)
 from .settings import Settings
 
 SR = 48000
@@ -254,6 +255,15 @@ class App:
         self.banner_btn = ttk.Button(self.banner, text="Set up virtual microphone", command=self.install_cable)
         self.banner_btn.pack(side="right")
 
+        # AI voice pack download bar (shown while downloading)
+        self.dl_bar = ttk.Frame(r, padding=(14, 4))
+        self.dl_label = ttk.Label(self.dl_bar, text="")
+        self.dl_label.pack(side="left")
+        ttk.Button(self.dl_bar, text="Cancel", command=self._cancel_download).pack(side="right")
+        self.dl_progress = ttk.Progressbar(self.dl_bar, mode="determinate", length=320, maximum=1000)
+        self.dl_progress.pack(side="right", padx=10)
+        self._dl_cancel = None
+
         self.status = tk.StringVar(value="Starting…")  # packed before the body so it always gets space
         ttk.Label(r, textvariable=self.status, padding=(14, 6), foreground="#aaa").pack(fill="x", side="bottom")
         body = ttk.Frame(r, padding=(14, 4))
@@ -265,7 +275,7 @@ class App:
         ttk.Label(left, text="Search voices", foreground="#999").pack(anchor="w")
         ttk.Entry(left, textvariable=self.search, width=32).pack(fill="x")
         ttk.Button(left, text="+  New AI voice", style="Accent.TButton",
-                   command=lambda: NewAIVoiceDialog(self)).pack(fill="x", side="bottom")
+                   command=lambda: self.ensure_ai_pack(lambda: NewAIVoiceDialog(self))).pack(fill="x", side="bottom")
         self.tree = ttk.Treeview(left, show="tree", selectmode="browse", height=12)
         self.tree.column("#0", width=290)
         self.tree.pack(fill="both", expand=True, pady=6)
@@ -345,6 +355,9 @@ class App:
 
     def _load_processor(self, spec):
         if not self.engine:
+            return
+        if unavailable_reason(spec) == NEEDS_DOWNLOAD:
+            self.ensure_ai_pack(lambda: self._load_processor(spec))
             return
         self._load_token += 1
         token = self._load_token
@@ -493,6 +506,64 @@ class App:
         ok, ratio = self_test(cables[0], self.hostapi)
         messagebox.showinfo("Virtual microphone", f"{cables[0].label}: {'working' if ok else 'NOT passing audio'} "
                                                   f"({ratio:.0f} dB tone-to-noise)")
+
+    # -------------------------------------------------------------- AI voice pack
+    def ensure_ai_pack(self, then):
+        """Run ``then`` now if the AI voice pack is installed, else offer to download it first."""
+        from .ai.model_pack import find_model
+        if find_model():
+            then()
+            return
+        if self._dl_cancel is not None:
+            self.status.set("The AI voice pack is still downloading…")
+            return
+        if messagebox.askyesno("AI voices", "AI voices need a one-time download of about 820 MB.\n\n"
+                               "Download them now? You can keep using VoxShift meanwhile, and an "
+                               "interrupted download resumes where it stopped."):
+            self.download_ai_pack(then)
+
+    def download_ai_pack(self, then=None):
+        from .ai import model_pack
+        cancel = self._dl_cancel = threading.Event()
+        self.dl_progress["value"] = 0
+        self.dl_label.config(text="Downloading AI voices…")
+        self.dl_bar.pack(fill="x", after=self.root.winfo_children()[0])
+        last = [0.0]
+
+        def progress(done, total):
+            import time
+            if time.monotonic() - last[0] > 0.2 or done >= total:
+                last[0] = time.monotonic()
+                self.call_soon(lambda: self._dl_update(done, total))
+
+        def run():
+            try:
+                model_pack.download(progress, cancel)
+                msg, ok = "AI voices installed.", True
+            except InterruptedError:
+                msg, ok = "AI voice download paused — it resumes next time.", False
+            except Exception as e:
+                log.exception("AI voice pack download failed")
+                msg, ok = f"AI voice download failed: {e} (it resumes next time)", False
+            self.call_soon(lambda: self._dl_finished(msg, ok, then))
+        threading.Thread(target=run, name="ai-pack-download", daemon=True).start()
+
+    def _dl_update(self, done, total):
+        self.dl_progress["value"] = 1000 * done / max(total, 1)
+        self.dl_label.config(text=f"Downloading AI voices… {done / 2**20:.0f} / {total / 2**20:.0f} MB")
+
+    def _dl_finished(self, msg, ok, then):
+        self._dl_cancel = None
+        self.dl_bar.pack_forget()
+        self.status.set(msg)
+        if ok:
+            self.refresh_voices(select=self.current_key)
+            if then:
+                then()
+
+    def _cancel_download(self):
+        if self._dl_cancel:
+            self._dl_cancel.set()
 
     def _first_run(self):
         if self.s.first_run_done:

@@ -44,8 +44,9 @@ class OnnxSeedVCModel:
 
     def __init__(self, onnx_dir: str, providers: list[str] | None = None):
         d = Path(onnx_dir)
-        if not d.is_absolute():  # "models/onnx/<name>" relative to the install / repo root
-            d = install_dir() / d
+        if not d.is_absolute():  # "models/onnx/<name>": bundled, or the downloaded voice pack
+            from .model_pack import find_model
+            d = find_model(d.name) or install_dir() / d
         if not (d / "config.json").is_file():
             raise FileNotFoundError(f"{d} has no exported model; run `python -m voxshift export-onnx` first")
         self.dir = d
