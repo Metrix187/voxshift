@@ -145,6 +145,7 @@ class AudioEngine:
         self.output_gain_db = 0.0
         self.monitor_gain_db = -6.0
         self.meters = Meters()
+        self.processor_error: str | None = None  # set when a voice failed and was dropped
         self._limiter = SoftLimiter(samplerate, ceiling_db=-0.5)
         self._sounds: list[np.ndarray] = []
         self._lock = threading.Lock()
@@ -233,7 +234,17 @@ class AudioEngine:
         x = indata[:, 0].astype(np.float64) * (0.0 if self.mic_muted else db_to_lin(self.input_gain_db))
         with self._lock:
             proc = self.processor
-            y = proc.process(x) if (proc is not None and self.voice_enabled) else x
+            y = x
+            if proc is not None and self.voice_enabled:
+                error = getattr(proc, "error", None)  # a threaded AI worker reports failures here
+                if error is None:
+                    try:
+                        y = proc.process(x)
+                    except Exception as e:  # e.g. the GPU was reset mid-inference
+                        error = f"{type(e).__name__}: {e}"
+                if error is not None:
+                    # never let a broken voice kill the audio: drop it, pass the mic through
+                    self.processor, self.processor_error, y = None, error, x
             if self._sounds:
                 keep = []
                 for s in self._sounds:

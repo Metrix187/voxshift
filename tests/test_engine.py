@@ -44,3 +44,17 @@ def test_soundboard_mixes_and_drains(engine):
     assert np.mean(np.abs(blocks[0])) > 0.2
     assert np.max(np.abs(blocks[-1])) == 0.0
     assert engine._sounds == []
+
+
+def test_failing_voice_is_dropped_not_fatal(engine):
+    class Broken:
+        latency = 0
+
+        def process(self, x):
+            raise RuntimeError("device removed")
+
+    engine.processor = Broken()
+    x = 0.1 * np.sin(2 * np.pi * 300 * np.arange(480) / SR)
+    out = call(engine, x)
+    assert engine.processor is None and "device removed" in engine.processor_error
+    assert np.max(np.abs(out[:, 0] - x)) < 1e-3  # the mic keeps flowing, unprocessed

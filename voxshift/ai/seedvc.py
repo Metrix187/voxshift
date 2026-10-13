@@ -419,6 +419,7 @@ class SeedVCProcessor:
         # decouples, so the host keeps small low-latency buffers.
         self.preferred_blocksize = self.streamer.block_frame if mode == "inline" else None
         self.headroom = float(spec.get("rtf_headroom", 0.9))  # inference time as a fraction of a block
+        self.error: str | None = None  # set by the worker if conversion fails
         self._in = np.zeros(0)
         self._out = np.zeros(self._prefill())
         self._q_in: queue.Queue = queue.Queue()
@@ -463,8 +464,18 @@ class SeedVCProcessor:
                 blk = self._q_in.get(timeout=0.1)
             except queue.Empty:
                 continue
-            with self._lock:
-                self._q_out.put(self.streamer.process_block(blk))
+            # if conversion falls behind (hot / throttled GPU), skip stale audio instead of
+            # queueing it without bound: memory stays flat and latency recovers
+            while self._q_in.qsize() > 1:
+                blk = self._q_in.get_nowait()
+            try:
+                with self._lock:
+                    self._q_out.put(self.streamer.process_block(blk))
+            except Exception as e:  # e.g. GPU device removed: report, stop converting
+                import logging
+                logging.getLogger(__name__).exception("AI voice conversion failed")
+                self.error = f"{type(e).__name__}: {e}"
+                return
 
     def close(self):
         self._stop.set()

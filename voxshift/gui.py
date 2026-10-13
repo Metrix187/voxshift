@@ -692,6 +692,12 @@ class App:
                 self._ui_queue.get_nowait()()
             except Exception:
                 log.exception("UI callback failed")
+        if self.engine and self.engine.processor_error:  # the engine dropped a failing voice
+            err, self.engine.processor_error = self.engine.processor_error, None
+            log.error("voice stopped: %s", err)
+            self.current_key = None
+            self.refresh_voices(select="clean")
+            self.status.set(f"The voice stopped after an error and VoxShift switched to Clean ({err[:120]})")
         c = self.meter
         c.delete("all")
         if self.engine:
