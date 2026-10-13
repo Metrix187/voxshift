@@ -220,6 +220,11 @@ class App:
         self.register_hotkeys()
         self._start_tray()
         root.protocol("WM_DELETE_WINDOW", self.on_close)
+        # Tk delivers WM_QUERYENDSESSION (Windows logoff / Restart Manager during updates) as
+        # WM_SAVE_YOURSELF: really exit then, instead of hiding in the tray.
+        root.protocol("WM_SAVE_YOURSELF", self.quit)
+        self._quit_evt = winsys.NamedEvent(winsys.NamedEvent.QUIT)
+        self._show_evt = winsys.NamedEvent(winsys.NamedEvent.SHOW)
         if minimized or self.s.start_minimized:
             root.withdraw() if self.tray else root.iconify()
         root.after(400, self._first_run)
@@ -677,6 +682,11 @@ class App:
 
     # -------------------------------------------------------------- meters
     def _tick(self):
+        if self._quit_evt.is_set():  # the installer is about to replace our files
+            self.quit()
+            return
+        if self._show_evt.is_set():  # VoxShift was launched again: surface this instance
+            self.show()
         while not self._ui_queue.empty():
             try:
                 self._ui_queue.get_nowait()()
@@ -708,7 +718,8 @@ def main(argv: list[str] | None = None):
     _setup_logging()
     guard = winsys.SingleInstance()
     if guard.already_running:
-        winsys.message_box("VoxShift is already running — look for its icon in the system tray.")
+        if not winsys.NamedEvent.signal(winsys.NamedEvent.SHOW):
+            winsys.message_box("VoxShift is already running — look for its icon in the system tray.")
         return
     winsys.set_app_id()
     winsys.enable_dpi_awareness()

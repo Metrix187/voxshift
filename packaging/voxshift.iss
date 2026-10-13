@@ -46,6 +46,10 @@ Name: "vbcable"; Description: "Install the virtual microphone (free VB-CABLE dri
 Name: "desktopicon"; Description: "Create a desktop shortcut"
 Name: "autostart"; Description: "Start VoxShift with Windows (in the tray)"; Flags: unchecked
 
+[InstallDelete]
+; an earlier offline (bundled-model) install kept the model here; web installs use %LOCALAPPDATA%
+Type: filesandordirs; Name: "{app}\models"
+
 [Files]
 Source: "{#DistDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
@@ -89,6 +93,34 @@ end;
 function ModelInstalled: Boolean;
 begin
   Result := FileExists(ExpandConstant('{localappdata}\VoxShift\models\onnx\whisper-small-bigvgan\config.json'));
+end;
+
+{ Ask a running VoxShift to exit before its files are replaced. It hides in the tray when its
+  window is closed, so the Restart Manager alone cannot shut it down. }
+function OpenEvent(Access: Cardinal; Inherit: LongBool; Name: String): THandle;
+  external 'OpenEventW@kernel32.dll stdcall';
+function SetEvent(Handle: THandle): LongBool;
+  external 'SetEvent@kernel32.dll stdcall';
+function CloseHandle(Handle: THandle): LongBool;
+  external 'CloseHandle@kernel32.dll stdcall';
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  H: THandle;
+  I: Integer;
+begin
+  Result := '';
+  H := OpenEvent($0002, False, 'Local\VoxShift.Quit');
+  if H <> 0 then begin
+    SetEvent(H);
+    CloseHandle(H);
+    for I := 1 to 50 do begin  { the event vanishes once the app has exited; wait up to 5 s }
+      Sleep(100);
+      H := OpenEvent($0002, False, 'Local\VoxShift.Quit');
+      if H = 0 then Break;
+      CloseHandle(H);
+    end;
+  end;
 end;
 
 #ifdef ModelInclude

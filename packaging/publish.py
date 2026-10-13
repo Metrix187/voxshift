@@ -3,12 +3,13 @@
     python packaging/publish.py --models          # build/model-pack -> release models-v1 (not "latest")
     python packaging/publish.py --app             # build/VoxShift-Setup-<ver>.exe -> release v<ver> (latest)
 
-Files already on the release with the right size are skipped, so re-running
+Files already on the release with the same SHA-256 are skipped, so re-running
 after a network failure only uploads what is missing. Needs the GitHub CLI.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -39,11 +40,18 @@ def assets(release_id: int) -> dict[str, dict]:
     return {a["name"]: a for a in json.loads(gh("api", f"repos/{REPO}/releases/{release_id}/assets?per_page=100"))}
 
 
+def same_file(asset: dict, f: Path) -> bool:
+    """GitHub reports a SHA-256 digest per asset; fall back to size for older assets."""
+    if asset.get("digest", "").startswith("sha256:"):
+        return asset["digest"] == "sha256:" + hashlib.sha256(f.read_bytes()).hexdigest()
+    return asset["size"] == f.stat().st_size
+
+
 def upload(tag: str, release_id: int, files: list[Path], tries: int = 6) -> None:
     for i, f in enumerate(files, 1):
         for attempt in range(1, tries + 1):
             have = assets(release_id).get(f.name)
-            if have and have["state"] == "uploaded" and have["size"] == f.stat().st_size:
+            if have and have["state"] == "uploaded" and same_file(have, f):
                 print(f"[{i}/{len(files)}] {f.name}: ok")
                 break
             if have:  # partial / stale upload: remove before retrying

@@ -50,6 +50,34 @@ class SingleInstance:
             self.already_running = ctypes.get_last_error() == 183  # ERROR_ALREADY_EXISTS
 
 
+class NamedEvent:
+    """Auto-reset Win32 event other processes can signal by name.
+
+    The installer sets ``Local\\VoxShift.Quit`` so a running copy exits
+    before files are replaced; a second launch sets ``Local\\VoxShift.Show``
+    to bring the running window forward instead of starting twice."""
+
+    QUIT, SHOW = "Local\\VoxShift.Quit", "Local\\VoxShift.Show"
+
+    def __init__(self, name: str):
+        self.handle = ctypes.WinDLL("kernel32").CreateEventW(None, False, False, name) if IS_WIN else None
+
+    def is_set(self) -> bool:
+        return bool(self.handle) and ctypes.WinDLL("kernel32").WaitForSingleObject(self.handle, 0) == 0
+
+    @staticmethod
+    def signal(name: str) -> bool:
+        if not IS_WIN:
+            return False
+        k32 = ctypes.WinDLL("kernel32")
+        h = k32.OpenEventW(0x0002, False, name)  # EVENT_MODIFY_STATE
+        if not h:
+            return False
+        k32.SetEvent(h)
+        k32.CloseHandle(h)
+        return True
+
+
 class GlobalHotkeys:
     """RegisterHotKey on a dedicated thread with its own message loop.
 
