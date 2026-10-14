@@ -28,13 +28,21 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#OutDir}
+#ifdef ModelInclude
 OutputBaseFilename=VoxShift-Setup-{#AppVersion}
+; small web installer: squeeze it
+Compression=lzma2/ultra64
+SolidCompression=yes
+#else
+OutputBaseFilename=VoxShift-Setup-{#AppVersion}-offline
+; offline installer: the model weights barely compress, so don't burn minutes of CPU trying
+Compression=lzma2/fast
+SolidCompression=no
+#endif
 SetupIconFile=..\voxshift\assets\voxshift.ico
 UninstallDisplayIcon={app}\VoxShift.exe
 UninstallDisplayName=VoxShift
 WizardStyle=modern
-Compression=lzma2/ultra64
-SolidCompression=yes
 CloseApplications=yes
 RestartApplications=no
 

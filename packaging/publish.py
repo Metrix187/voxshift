@@ -81,10 +81,13 @@ def main():
         ns: dict = {}
         exec((ROOT / "voxshift" / "__init__.py").read_text(), ns)
         ver = ns["__version__"]
-        exe = BUILD / f"VoxShift-Setup-{ver}.exe"
+        exes = [p for p in (BUILD / f"VoxShift-Setup-{ver}.exe", BUILD / f"VoxShift-Setup-{ver}-offline.exe")
+                if p.is_file()]
+        if not exes:
+            raise SystemExit(f"no installer for {ver} in {BUILD}: run packaging/build.py first")
         notes = a.notes.read_text(encoding="utf-8") if a.notes else f"VoxShift {ver}"
         rid = ensure_release(f"v{ver}", f"VoxShift {ver}", notes, latest=True)
-        upload(f"v{ver}", rid, [exe])
+        upload(f"v{ver}", rid, exes)
 
 
 if __name__ == "__main__":

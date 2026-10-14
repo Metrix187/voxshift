@@ -17,7 +17,13 @@ telemetry.
 ## Download
 
 Get **`VoxShift-Setup-<version>.exe`** (about 60 MB) from
-[Releases](../../releases/latest) and run it. It's a web installer:
+[Releases](../../releases/latest) and run it.
+
+For a PC with no internet, or to keep a full copy, take
+**`VoxShift-Setup-<version>-offline.exe`** (about 880 MB) instead. It has the
+AI voices built in.
+
+The standard installer is a web installer:
 
 * **Per-user install.** It goes into `%LOCALAPPDATA%\Programs\VoxShift`, with shortcuts and an uninstaller. The app itself needs no admin rights.
 * **AI voices.** Leave **"Download AI voices now"** checked to fetch the 820 MB AI voice pack during setup. It comes in 25 MB pieces, and each one is SHA-256 checked. If you skip it, the app offers the download the first time you use an AI voice, and it resumes if interrupted.

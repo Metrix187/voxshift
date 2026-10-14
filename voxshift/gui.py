@@ -410,15 +410,28 @@ class App:
             self.refresh_voices(select="clean")
 
     # -------------------------------------------------------------- engine
+    def _present(self, name: str, kind: str) -> str | None:
+        """The saved device if it is plugged in now; otherwise None (= system default), noted
+        for the status bar. Settings keep the saved name, so it is used again once reconnected."""
+        if not name or name == "virtual":
+            return name or None
+        names = [d["name"] for d in list_devices(kind, self.hostapi)]
+        if any(name == n or name.lower() in n.lower() for n in names):
+            return name
+        self._missing.append(name)
+        return None
+
     def restart_engine(self):
         if self.engine:
             self.engine.stop()
             self.engine = None
         s = self.s
+        self._missing: list[str] = []
         try:
-            monitor = s.monitor_device or self._default_monitor()
-            self.engine = AudioEngine(s.input_device or None, s.output_device or "virtual", monitor,
-                                      samplerate=SR, blocksize=512, hostapi=self.hostapi)
+            mic = self._present(s.input_device, "input")
+            monitor = self._present(s.monitor_device, "output") or self._default_monitor()
+            output = self._present(s.output_device, "output") or "virtual"
+            self.engine = AudioEngine(mic, output, monitor, samplerate=SR, blocksize=512, hostapi=self.hostapi)
             self.apply_toggles(save=False)
             self.engine.start()
             self.banner.pack_forget()
@@ -472,7 +485,9 @@ class App:
         lat = ""
         if self.engine.processor is not None:
             lat = f"   ·   latency ≈ {1000 * self.engine.processor.latency / SR + self.engine.stream_latency_ms:.0f} ms"
-        self.status.set(mic + lat)
+        missing = getattr(self, "_missing", [])
+        note = f"   ·   “{missing[0]}” isn't connected, using the system default" if missing else ""
+        self.status.set(mic + lat + note)
 
     # -------------------------------------------------------------- virtual mic
     def install_cable(self):
