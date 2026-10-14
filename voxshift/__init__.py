@@ -6,4 +6,4 @@ import os
 # threaded and FFT-bound). Two threads keep matrix maths quick at ~160 MB.
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"

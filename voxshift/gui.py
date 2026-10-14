@@ -205,6 +205,7 @@ class App:
         self.hotkey_errors: dict[str, str] = {}
         self.tray = None
         self._load_token = 0
+        self._closing = False
         self._ui_queue: queue.SimpleQueue = queue.SimpleQueue()
         root.title("VoxShift")
         root.geometry("1000x640")
@@ -681,6 +682,9 @@ class App:
             self.quit()
 
     def quit(self):
+        if self._closing:  # tray, hotkey, installer and WM_SAVE_YOURSELF can all ask
+            return
+        self._closing = True
         self.s.save()
         if self.hotkeys:
             self.hotkeys.stop()
@@ -702,11 +706,13 @@ class App:
             return
         if self._show_evt.is_set():  # VoxShift was launched again: surface this instance
             self.show()
-        while not self._ui_queue.empty():
+        while not self._ui_queue.empty() and not self._closing:
             try:
                 self._ui_queue.get_nowait()()
             except Exception:
                 log.exception("UI callback failed")
+        if self._closing:  # a queued action (e.g. tray "Quit") just destroyed the window
+            return
         if self.engine and self.engine.processor_error:  # the engine dropped a failing voice
             err, self.engine.processor_error = self.engine.processor_error, None
             log.error("voice stopped: %s", err)
