@@ -37,6 +37,8 @@ The standard installer is a web installer:
 
 - [x] **20 real-time voices**: robot, demon, deep, chipmunk, male↔female, radio, telephone, megaphone, cave, alien, ghost, auto-tune and more.
 - [x] **AI voices from your own recording.** Click **New AI voice**, then pick a clip or record 10 s of someone talking. It uses Seed-VC (Whisper encoder → diffusion transformer → BigVGAN) running locally on ONNX Runtime + DirectML, so it works on any DirectX 12 GPU.
+  * **Quality (diffusion steps)**: more steps sound cleaner, with diminishing returns past about 10–15. Each step costs GPU time, so if the voice starts stuttering, lower it or raise smoothing. 6–8 is a good start; up to 30 is allowed.
+  * **Smoothing (adds delay)**: `off` / `low` / `medium` / `high`. Higher levels give the model bigger chunks and a peek at what you say next, so the voice is more accurate and steadier, at the cost of extra delay (roughly +0.2 s, +0.5 s, +1 s). Handy for recording or streaming where lag doesn't matter. CLI: `--block-time` and `--lookahead`.
 - [x] **Soundboard**: point it at a folder of sounds and they mix into your mic.
 - [x] **Virtual microphone** (VB-CABLE), plus **hear myself** monitoring on your headphones.
 - [x] **Global hotkeys**: <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F9</kbd> voice changer · <kbd>F10</kbd> hear myself · <kbd>F11</kbd> mute mic · <kbd>F12</kbd> stop sounds. You can change them in Settings.

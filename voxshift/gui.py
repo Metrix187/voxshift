@@ -20,8 +20,8 @@ from . import __version__, winsys
 from .audio.cable import find_cables, install_vbcable
 from .audio.engine import AudioEngine, NoVirtualCable, default_hostapi, list_devices
 from .paths import FROZEN, log_dir
-from .presets import (NEEDS_DOWNLOAD, build_processor, create_ai_voice, delete_user_voice, is_ai, list_presets,
-                      unavailable_reason)
+from .presets import (NEEDS_DOWNLOAD, SMOOTHING, build_processor, create_ai_voice, delete_user_voice, is_ai,
+                      list_presets, smoothing_overrides, unavailable_reason)
 from .settings import Settings
 
 SR = 48000
@@ -296,8 +296,14 @@ class App:
         self.ai_box = ttk.Frame(right)
         ttk.Label(self.ai_box, text="Quality (diffusion steps)").pack(side="left")
         self.steps = tk.IntVar(value=self.s.diffusion_steps)
-        ttk.Spinbox(self.ai_box, from_=2, to=12, textvariable=self.steps, width=4,
+        ttk.Spinbox(self.ai_box, from_=2, to=30, textvariable=self.steps, width=4,
                     command=self._steps_changed).pack(side="left", padx=8)
+        ttk.Label(self.ai_box, text="Smoothing (adds delay)").pack(side="left", padx=(12, 0))
+        self.smoothing = tk.StringVar(value=self.s.ai_smoothing if self.s.ai_smoothing in SMOOTHING else "off")
+        sm = ttk.Combobox(self.ai_box, textvariable=self.smoothing, values=list(SMOOTHING),
+                          state="readonly", width=7)
+        sm.pack(side="left", padx=8)
+        sm.bind("<<ComboboxSelected>>", lambda e: self._smoothing_changed())
         self.del_btn = ttk.Button(self.ai_box, text="Delete voice", command=self._delete_voice)
         self.progress = ttk.Progressbar(right, mode="indeterminate", length=240)
 
@@ -374,10 +380,11 @@ class App:
         self.progress.start(12)
         self.status.set(f"Loading {spec.get('name')}…")
         steps = int(self.steps.get())  # Tk state is read on the UI thread only
+        smooth = smoothing_overrides(spec, self.smoothing.get())
 
         def run():
             try:
-                proc = build_processor(spec, SR, diffusion_steps=steps, ai_mode="threaded")
+                proc = build_processor(spec, SR, diffusion_steps=steps, ai_mode="threaded", **smooth)
                 proc.warmup()
                 self.call_soon(lambda: token == self._load_token and self._apply_processor(proc, spec))
             except Exception as e:
@@ -399,6 +406,12 @@ class App:
 
     def _steps_changed(self):
         self.s.diffusion_steps = int(self.steps.get())
+        self.s.save()
+        if self.current_key:
+            self._load_processor(self.presets[self.current_key])
+
+    def _smoothing_changed(self):
+        self.s.ai_smoothing = self.smoothing.get()
         self.s.save()
         if self.current_key:
             self._load_processor(self.presets[self.current_key])

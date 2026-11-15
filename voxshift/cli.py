@@ -10,7 +10,7 @@ import numpy as np
 
 def _ai_overrides(a) -> dict:
     return {"diffusion_steps": a.diffusion_steps, "block_time": a.block_time,
-            "inference_cfg_rate": a.cfg_rate}
+            "inference_cfg_rate": a.cfg_rate, "extra_time_right": a.lookahead}
 
 
 def cmd_devices(a):
@@ -189,6 +189,8 @@ def build_parser() -> argparse.ArgumentParser:
         s.add_argument("--diffusion-steps", type=int)
         s.add_argument("--block-time", type=float)
         s.add_argument("--cfg-rate", type=float)
+        s.add_argument("--lookahead", type=float,
+                       help="AI right look-ahead in seconds (more delay, more accurate)")
 
     s = sub.add_parser("convert", help="render a file through a voice")
     s.add_argument("input")
