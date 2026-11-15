@@ -294,15 +294,18 @@ class App:
         self.v_desc = ttk.Label(right, text="", wraplength=560, justify="left", foreground="#aaa")
         self.v_desc.pack(anchor="w", pady=(2, 8))
         self.ai_box = ttk.Frame(right)
-        ttk.Label(self.ai_box, text="Quality (diffusion steps)").pack(side="left")
+        # one control per line: side by side they don't fit the window's minimum width
+        ai_grid = ttk.Frame(self.ai_box)
+        ai_grid.pack(anchor="w")
+        ttk.Label(ai_grid, text="Quality (diffusion steps)").grid(row=0, column=0, sticky="w")
         self.steps = tk.IntVar(value=self.s.diffusion_steps)
-        ttk.Spinbox(self.ai_box, from_=2, to=30, textvariable=self.steps, width=4,
-                    command=self._steps_changed).pack(side="left", padx=8)
-        ttk.Label(self.ai_box, text="Smoothing (adds delay)").pack(side="left", padx=(12, 0))
+        ttk.Spinbox(ai_grid, from_=2, to=30, textvariable=self.steps, width=4,
+                    command=self._steps_changed).grid(row=0, column=1, sticky="w", padx=8, pady=2)
+        ttk.Label(ai_grid, text="Smoothing (adds delay)").grid(row=1, column=0, sticky="w")
         self.smoothing = tk.StringVar(value=self.s.ai_smoothing if self.s.ai_smoothing in SMOOTHING else "off")
-        sm = ttk.Combobox(self.ai_box, textvariable=self.smoothing, values=list(SMOOTHING),
+        sm = ttk.Combobox(ai_grid, textvariable=self.smoothing, values=list(SMOOTHING),
                           state="readonly", width=7)
-        sm.pack(side="left", padx=8)
+        sm.grid(row=1, column=1, sticky="w", padx=8, pady=2)
         sm.bind("<<ComboboxSelected>>", lambda e: self._smoothing_changed())
         self.del_btn = ttk.Button(self.ai_box, text="Delete voice", command=self._delete_voice)
         self.progress = ttk.Progressbar(right, mode="indeterminate", length=240)
@@ -360,7 +363,7 @@ class App:
         self.v_desc.config(text=spec.get("description", ""))
         if is_ai(spec):
             self.ai_box.pack(anchor="w", pady=4, before=self.sb)
-            self.del_btn.pack(side="left", padx=12) if spec.get("_user") else self.del_btn.pack_forget()
+            self.del_btn.pack(anchor="w", pady=(6, 0)) if spec.get("_user") else self.del_btn.pack_forget()
         else:
             self.ai_box.pack_forget()
         self._load_processor(spec)
