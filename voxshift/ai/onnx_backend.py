@@ -8,6 +8,7 @@ standalone build needs no PyTorch.
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -58,11 +59,16 @@ class OnnxSeedVCModel:
         self.whisper_filters, self.mel_basis, self.kaldi_banks = (
             c["whisper_mel_filters"], c["mel_basis"], c["kaldi_mel_banks"])
         self.rng = np.random.default_rng()
+        # The model is shared by every processor built from it, so a voice that is reloading
+        # (steps / smoothing changed) warms up while the previous one still converts. DirectML
+        # allows only one thread in Run per session; overlapping calls hang the GPU (TDR).
+        self._run_lock = threading.Lock()
 
     def _run(self, name, **feeds):
         feeds = {k: np.ascontiguousarray(v, dtype=np.int64 if v.dtype.kind in "iu" else np.float32)
                  for k, v in feeds.items()}
-        return self.sess[name].run(None, feeds)[0]
+        with self._run_lock:
+            return self.sess[name].run(None, feeds)[0]
 
     # -- building blocks (all numpy) ------------------------------------
     def content(self, w16: np.ndarray) -> np.ndarray:
