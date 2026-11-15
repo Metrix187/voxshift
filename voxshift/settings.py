@@ -20,6 +20,7 @@ class Settings:
     output_gain_db: float = 0.0
     monitor_gain_db: float = -6.0
     diffusion_steps: int = 6
+    ai_smoothing: str = "off"  # presets.SMOOTHING level
     soundboard_dir: str = ""
     start_minimized: bool = False
     close_to_tray: bool = True

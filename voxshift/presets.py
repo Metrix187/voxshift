@@ -14,6 +14,26 @@ BUILTIN_DIR = Path(__file__).resolve().parent / "voices"
 ONNX_MODEL = "whisper-small-bigvgan"
 NEEDS_DOWNLOAD = "AI voices need a one-time download (about 820 MB)"
 
+# AI "smoothing": trade extra delay for accuracy. Each level scales the voice's
+# block size (more context per pass, more time per pass for diffusion steps) and
+# sets the right look-ahead (the model hears a bit of what comes next).
+# (block_time multiplier, extra_time_right seconds)
+SMOOTHING = {
+    "off": (1.0, None),        # the voice's own settings
+    "low": (1.5, 0.10),
+    "medium": (2.0, 0.25),
+    "high": (3.0, 0.50),
+}
+
+
+def smoothing_overrides(spec: dict, level: str) -> dict:
+    """StreamConfig overrides for an AI voice at a smoothing level."""
+    mult, right = SMOOTHING.get(level, SMOOTHING["off"])
+    out = {"block_time": round(float(spec.get("block_time", 0.3)) * mult, 3)}
+    if right is not None:
+        out["extra_time_right"] = max(right, float(spec.get("extra_time_right", 0.02)))
+    return out
+
 
 def preset_dirs() -> list[Path]:
     return [BUILTIN_DIR, user_voices_dir()]
